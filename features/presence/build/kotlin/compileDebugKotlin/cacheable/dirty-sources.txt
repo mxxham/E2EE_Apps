@@ -1,0 +1,1 @@
+C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\features\presence\src\main\java\com\securechat\features\presence\PresenceRepository.kt

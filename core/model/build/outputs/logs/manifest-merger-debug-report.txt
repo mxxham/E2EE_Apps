@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml:2:13-83
+INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml:2:13-83
+	package
+		INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml
+	xmlns:android
+		ADDED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml:2:23-81
+uses-sdk
+INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml reason: use-sdk injection requested
+INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml
+INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml
+	android:targetSdkVersion
+		INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml
+	android:minSdkVersion
+		INJECTED from C:\Users\asust\.gemini\antigravity-ide\scratch\e2ee_apps\core\model\build\intermediates\tmp\ProcessLibraryManifest\debug\tempAndroidManifest8331011394383561607.xml
