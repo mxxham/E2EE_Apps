@@ -14,6 +14,11 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- ── Hardware features ────────────────────────────────────────────── -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <application
         android:name=".SecureChatApplication"
         android:allowBackup="false"
@@ -38,15 +43,6 @@
             </intent-filter>
         </activity>
 
-        <!-- ── FCM Push Notification Service ─────────────────────────── -->
-        <service
-            android:name="com.securechat.features.notifications.SecureFcmService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
         <!-- ── WorkManager initializer (manual for Hilt injection) ─────── -->
         <provider
             android:name="androidx.startup.InitializationProvider"
@@ -58,11 +54,6 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
-
-        <!-- Notification channel metadata (>= Android 8) -->
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="@string/default_notification_channel_id" />
 
     </application>
 </manifest>

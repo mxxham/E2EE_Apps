@@ -33,7 +33,7 @@ import javax.inject.Singleton
  * ## Server-side OneSignal payload (send from your backend / Supabase Edge Function)
  * ```json
  * {
- *   "app_id": "<YOUR_ONESIGNAL_APP_ID>",
+ *   "app_id": "4cbbfc1b-ec74-42e6-b45d-be945f3649a4",
  *   "include_aliases": { "onesignal_id": ["<recipient_onesignal_id>"] },
  *   "target_channel": "push",
  *   "data": {
@@ -61,7 +61,7 @@ class OneSignalHandler @Inject constructor(
 
     companion object {
         // Replace with your OneSignal App ID from https://app.onesignal.com
-        private const val ONESIGNAL_APP_ID = "<YOUR_ONESIGNAL_APP_ID>"
+        private const val ONESIGNAL_APP_ID = "4cbbfc1b-ec74-42e6-b45d-be945f3649a4"
 
         /**
          * Call this once from [SecureChatApplication.onCreate].

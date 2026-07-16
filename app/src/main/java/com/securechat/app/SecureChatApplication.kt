@@ -3,6 +3,7 @@ package com.securechat.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.securechat.features.notifications.OneSignalHandler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -22,4 +23,9 @@ class SecureChatApplication : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
+
+    override fun onCreate() {
+        super.onCreate()
+        OneSignalHandler.initialize(this)
+    }
 }

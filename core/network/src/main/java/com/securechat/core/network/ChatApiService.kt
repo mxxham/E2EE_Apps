@@ -10,6 +10,7 @@ import io.github.jan.supabase.storage.storage
 import io.github.jan.supabase.storage.UploadStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -285,17 +286,17 @@ class ChatApiService(private val supabase: SupabaseClient) {
 data class UserRow(
     val id: String = "",
     val username: String,
-    val displayName: String,
-    val avatarUrl: String? = null,
-    val identityPublicKey: String = "",
+    @SerialName("display_name") val displayName: String,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("identity_public_key") val identityPublicKey: String = "",
 )
 
 @Serializable
 data class PreKeyRow(
-    val userId: String = "",
-    val keyId: Int,
-    val publicKey: String,
-    val keyType: String,           // "identity" | "signed" | "onetime"
+    @SerialName("user_id") val userId: String = "",
+    @SerialName("key_id") val keyId: Int,
+    @SerialName("public_key") val publicKey: String,
+    @SerialName("key_type") val keyType: String,           // "identity" | "signed" | "onetime"
     val signature: String? = null,
     val consumed: Boolean = false,
 )

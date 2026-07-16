@@ -18,7 +18,7 @@ android {
         versionCode   = 1
         versionName   = "1.0.0"
         // OneSignal App ID — also set in OneSignalHandler companion object
-        manifestPlaceholders["onesignal_app_id"] = "<YOUR_ONESIGNAL_APP_ID>"
+        manifestPlaceholders["onesignal_app_id"] = "4cbbfc1b-ec74-42e6-b45d-be945f3649a4"
     }
     buildTypes {
         release {
@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:security"))
     implementation(project(":core:network"))
+    implementation(project(":features:auth"))
     implementation(project(":features:chat"))
     implementation(project(":features:conversations"))
     implementation(project(":features:presence"))

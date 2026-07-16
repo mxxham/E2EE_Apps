@@ -22,6 +22,7 @@ include(":core:security")
 include(":core:network")
 
 // ── Feature Modules ───────────────────────────────────────────────────────────
+include(":features:auth")
 include(":features:chat")
 include(":features:conversations")
 include(":features:presence")

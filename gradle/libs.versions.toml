@@ -36,6 +36,11 @@ coroutinesTest           = "1.8.1"
 turbine                  = "1.1.0"
 androidxTestCore         = "1.5.0"
 robolectric              = "4.12.1"
+coreKtx = "1.10.1"
+junit = "1.1.5"
+espressoCore = "3.5.1"
+appcompat = "1.6.1"
+material = "1.10.0"
 
 [plugins]
 android-application      = { id = "com.android.application",                         version.ref = "androidGradlePlugin" }
@@ -112,3 +117,8 @@ turbine                  = { group = "app.cash.turbine",       name = "turbine",
 androidx-test-core       = { group = "androidx.test",          name = "core",                           version.ref = "androidxTestCore" }
 robolectric              = { group = "org.robolectric",        name = "robolectric",                    version.ref = "robolectric" }
 room-testing             = { group = "androidx.room",          name = "room-testing",                   version.ref = "room" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
