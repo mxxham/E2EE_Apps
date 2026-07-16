@@ -1,3 +1,4 @@
+
 package com.securechat.features.auth
 
 import android.util.Patterns
