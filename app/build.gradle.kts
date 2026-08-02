@@ -47,6 +47,7 @@ dependencies {
     implementation(project(":features:presence"))
     implementation(project(":features:media"))
     implementation(project(":features:notifications"))
+    implementation(project(":features:settings"))
 
     // ── Hilt ──────────────────────────────────────────────────────────────────
     implementation(libs.hilt.android)

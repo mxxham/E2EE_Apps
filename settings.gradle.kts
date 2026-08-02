@@ -31,3 +31,6 @@ include(":features:notifications")
 
 // ── Application Entry Point ───────────────────────────────────────────────────
 include(":app")
+include(":features:settings")
+include(":features:settings")
+include(":features:settings")

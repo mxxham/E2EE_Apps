@@ -88,8 +88,15 @@ class ChatApiService(private val supabase: SupabaseClient) {
     // ── Auth ──────────────────────────────────────────────────────────────────
 
     /**
-     * Signs up a new user with Supabase Auth (email/password),
-     * then inserts a profile row into `public.users`.
+     * Signs up a new user with Supabase Auth (email/password). The `public.users`
+     * profile row is created automatically server-side by a database trigger
+     * (see `handle_new_user()` in the SQL schema) reading the metadata passed here.
+     *
+     * NOTE: `signUpWith()` returns null when email confirmation is pending (no
+     * session yet) — that's expected SDK behavior, not a failure. Either way, the
+     * trigger has already run synchronously as part of the same transaction by the
+     * time this call returns, so we look the row up by username instead of relying
+     * on the return value.
      */
     suspend fun register(
         email: String,
@@ -101,18 +108,16 @@ class ChatApiService(private val supabase: SupabaseClient) {
         supabase.auth.signUpWith(Email) {
             this.email    = email
             this.password = password
+            data = buildJsonObject {
+                put("username", username)
+                put("display_name", displayName)
+                put("identity_public_key", identityPublicKey)
+            }
         }
-        val userId = supabase.auth.currentUserOrNull()?.id
-            ?: error("Registration succeeded but no user ID returned")
 
-        val row = UserRow(
-            id               = userId,
-            username         = username,
-            displayName      = displayName,
-            identityPublicKey = identityPublicKey,
-        )
-        supabase.postgrest["users"].insert(row)
-        row
+        supabase.postgrest["users"]
+            .select { filter { eq("username", username) } }
+            .decodeSingle<UserRow>()
     }
 
     suspend fun login(email: String, password: String): Result<String> = runCatching {
@@ -120,7 +125,11 @@ class ChatApiService(private val supabase: SupabaseClient) {
             this.email    = email
             this.password = password
         }
-        supabase.auth.currentUserOrNull()?.id ?: error("Login succeeded but no user ID")
+        val id = supabase.auth.currentUserOrNull()?.id ?: error("Login succeeded but no user ID")
+        // ── DEBUG ──────────────────────────────────────────────────────────
+        android.util.Log.d("SCDebug", "login() succeeded, userId=$id, hasActiveSession=${supabase.auth.currentSessionOrNull() != null}, supabase client identity hash = ${System.identityHashCode(supabase)}")
+        // ── END DEBUG ──────────────────────────────────────────────────────
+        id
     }
 
     suspend fun logout(): Result<Unit> = runCatching {
@@ -128,6 +137,13 @@ class ChatApiService(private val supabase: SupabaseClient) {
     }
 
     fun currentUserId(): String? = supabase.auth.currentUserOrNull()?.id
+
+    /**
+     * True only if Supabase has issued a real session (JWT access token) for this
+     * device — false right after registering if email confirmation is still pending,
+     * even though the account and profile row already exist.
+     */
+    fun hasActiveSession(): Boolean = supabase.auth.currentSessionOrNull() != null
 
     // ── PreKeys ───────────────────────────────────────────────────────────────
 
@@ -189,9 +205,71 @@ class ChatApiService(private val supabase: SupabaseClient) {
     // ── Conversations ─────────────────────────────────────────────────────────
 
     suspend fun fetchConversations(userId: String): Result<List<ConversationRow>> = runCatching {
-        // Get all conversation IDs the user participates in via RPC or join.
-        supabase.postgrest.rpc("get_user_conversations", buildJsonObject { put("p_user_id", userId) })
+        // Two flat queries instead of a Postgrest relational embed — avoids any risk
+        // of an embedded JSON object breaking ConversationRow's decoder, and avoids
+        // needing a custom Postgres RPC function.
+        val conversationIds = supabase.postgrest["conversation_participants"]
+            .select(columns = Columns.list("conversation_id")) {
+                filter { eq("user_id", userId) }
+            }
+            .decodeList<ParticipantRow>()
+            .map { it.conversationId }
+
+        if (conversationIds.isEmpty()) return@runCatching emptyList()
+
+        supabase.postgrest["conversations"]
+            .select { filter { isIn("id", conversationIds) } }
             .decodeList<ConversationRow>()
+    }
+
+    /**
+     * Finds an existing 1:1 (non-group) conversation between [userIdA] and [userIdB],
+     * if one already exists — used to avoid creating duplicate conversations when
+     * starting a chat with someone you've already messaged.
+     */
+    suspend fun findExistingConversation(userIdA: String, userIdB: String): Result<ConversationRow?> = runCatching {
+        val conversationIdsA = supabase.postgrest["conversation_participants"]
+            .select(columns = Columns.list("conversation_id")) { filter { eq("user_id", userIdA) } }
+            .decodeList<ParticipantRow>()
+            .map { it.conversationId }
+            .toSet()
+
+        if (conversationIdsA.isEmpty()) return@runCatching null
+
+        val conversationIdsB = supabase.postgrest["conversation_participants"]
+            .select(columns = Columns.list("conversation_id")) { filter { eq("user_id", userIdB) } }
+            .decodeList<ParticipantRow>()
+            .map { it.conversationId }
+            .toSet()
+
+        val sharedIds = conversationIdsA.intersect(conversationIdsB)
+        if (sharedIds.isEmpty()) return@runCatching null
+
+        supabase.postgrest["conversations"]
+            .select { filter { isIn("id", sharedIds.toList()); eq("is_group", false) } }
+            .decodeList<ConversationRow>()
+            .firstOrNull()
+    }
+
+    /**
+     * For a 1:1 (non-group) conversation, returns the OTHER participant (not [myUserId]).
+     * `conversations.title` is a single shared column set by whoever created the row — each
+     * side should see the OTHER person's name, not a fixed shared string, so the display
+     * title must be resolved per-viewer using this instead of reading `title` directly.
+     */
+    suspend fun getOtherParticipant(conversationId: String, myUserId: String): Result<UserRow?> = runCatching {
+        val participantIds = supabase.postgrest["conversation_participants"]
+            .select(columns = Columns.list("user_id")) {
+                filter { eq("conversation_id", conversationId) }
+            }
+            .decodeList<ParticipantUserIdRow>()
+            .map { it.userId }
+
+        val otherId = participantIds.firstOrNull { it != myUserId } ?: return@runCatching null
+
+        supabase.postgrest["users"]
+            .select { filter { eq("id", otherId) } }
+            .decodeSingle<UserRow>()
     }
 
     suspend fun createConversation(
@@ -199,6 +277,16 @@ class ChatApiService(private val supabase: SupabaseClient) {
         participantIds: List<String>,
         isGroup: Boolean = false,
     ): Result<ConversationRow> = runCatching {
+        // ── DEBUG ──────────────────────────────────────────────────────────
+        android.util.Log.d("SCDebug", "createConversation() called")
+        android.util.Log.d("SCDebug", "  currentUserId() = ${supabase.auth.currentUserOrNull()?.id}")
+        android.util.Log.d("SCDebug", "  hasActiveSession = ${supabase.auth.currentSessionOrNull() != null}")
+        android.util.Log.d("SCDebug", "  session.accessToken (first 20 chars) = ${supabase.auth.currentSessionOrNull()?.accessToken?.take(20)}")
+        android.util.Log.d("SCDebug", "  session.expiresAt = ${supabase.auth.currentSessionOrNull()?.expiresAt}")
+        android.util.Log.d("SCDebug", "  participantIds = $participantIds")
+        android.util.Log.d("SCDebug", "  supabase client identity hash = ${System.identityHashCode(supabase)}")
+        // ── END DEBUG ──────────────────────────────────────────────────────
+
         val conv = supabase.postgrest["conversations"]
             .insert(ConversationInsert(title = title, isGroup = isGroup)) { select() }
             .decodeSingle<ConversationRow>()
@@ -209,6 +297,10 @@ class ChatApiService(private val supabase: SupabaseClient) {
         }
         supabase.postgrest["conversation_participants"].insert(participants)
         conv
+    }.onFailure { error ->
+        // ── DEBUG ──────────────────────────────────────────────────────────
+        android.util.Log.e("SCDebug", "createConversation() FAILED: ${error::class.qualifiedName}", error)
+        // ── END DEBUG ──────────────────────────────────────────────────────
     }
 
     // ── Messages ──────────────────────────────────────────────────────────────
@@ -313,25 +405,35 @@ data class PeerPreKeyBundleRow(
 data class ConversationRow(
     val id: String = "",
     val title: String,
-    val isGroup: Boolean = false,
-    val createdAt: String = "",
+    @SerialName("is_group") val isGroup: Boolean = false,
+    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("created_by") val createdBy: String? = null,
 )
 
 @Serializable
-data class ConversationInsert(val title: String, val isGroup: Boolean = false)
+data class ParticipantRow(@SerialName("conversation_id") val conversationId: String)
+
+@Serializable
+data class ParticipantUserIdRow(@SerialName("user_id") val userId: String)
+
+@Serializable
+data class ConversationInsert(
+    val title: String,
+    @SerialName("is_group") val isGroup: Boolean = false,
+)
 
 @Serializable
 data class MessageRow(
     val id: String = "",
-    val conversationId: String,
-    val senderId: String,
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("sender_id") val senderId: String,
     /** Base64-encoded AES-GCM ciphertext. */
-    val encryptedBody: String,
+    @SerialName("encrypted_body") val encryptedBody: String,
     /** Base64-encoded GCM IV. */
     val iv: String,
-    val messageIndex: Int = 0,
-    val messageType: String = "TEXT",
-    val mediaUrl: String? = null,
+    @SerialName("message_index") val messageIndex: Int = 0,
+    @SerialName("message_type") val messageType: String = "TEXT",
+    @SerialName("media_url") val mediaUrl: String? = null,
     val timestamp: String = "",
 )
 

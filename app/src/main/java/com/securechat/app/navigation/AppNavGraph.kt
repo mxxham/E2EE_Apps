@@ -6,13 +6,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.securechat.features.auth.AuthScreen
 import com.securechat.features.chat.ChatScreen
-import com.securechat.features.conversations.ConversationListScreen
 
 /** Type-safe route constants. */
 object Routes {
-    const val CONVERSATION_LIST = "conversations"
-    const val CHAT              = "chat/{conversationId}/{conversationTitle}"
+    const val AUTH  = "auth"
+    const val MAIN  = "main"
+    const val CHAT  = "chat/{conversationId}/{conversationTitle}"
 
     fun chat(conversationId: String, title: String) =
         "chat/${conversationId}/${title}"
@@ -21,8 +22,11 @@ object Routes {
 /**
  * Root [NavHost] wiring all screens together.
  *
- * Screens are registered as named destinations. The back stack is fully
- * managed by Compose Navigation — no FragmentManager involved.
+ * [Routes.AUTH] is the start destination. [AuthViewModel] auto-skips past it
+ * if a Supabase session is already active. [Routes.MAIN] hosts the bottom-bar
+ * tabbed experience (Chats / Contacts / Settings, see [MainScreen]) — opening
+ * a specific conversation or logging out both navigate OUT of MAIN to the
+ * appropriate full-screen route.
  */
 @Composable
 fun AppNavGraph() {
@@ -30,18 +34,34 @@ fun AppNavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.CONVERSATION_LIST,
+        startDestination = Routes.AUTH,
     ) {
-        // ── Conversation List ───────────────────────────────────────────────
-        composable(route = Routes.CONVERSATION_LIST) {
-            ConversationListScreen(
-                onOpenConversation = { id, title ->
-                    navController.navigate(Routes.chat(id, title))
+        // ── Auth (Login / Register) ─────────────────────────────────────────
+        composable(route = Routes.AUTH) {
+            AuthScreen(
+                onAuthenticated = {
+                    navController.navigate(Routes.MAIN) {
+                        popUpTo(Routes.AUTH) { inclusive = true }
+                    }
                 },
             )
         }
 
-        // ── Chat Screen ─────────────────────────────────────────────────────
+        // ── Main (bottom-bar tabs: Chats / Contacts / Settings) ─────────────
+        composable(route = Routes.MAIN) {
+            MainScreen(
+                onOpenConversation = { id, title ->
+                    navController.navigate(Routes.chat(id, title))
+                },
+                onLoggedOut = {
+                    navController.navigate(Routes.AUTH) {
+                        popUpTo(Routes.MAIN) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        // ── Chat Screen (full-screen, outside the bottom bar) ────────────────
         composable(
             route = Routes.CHAT,
             arguments = listOf(

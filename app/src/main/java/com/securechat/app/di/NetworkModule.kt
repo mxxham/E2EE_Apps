@@ -1,13 +1,16 @@
 package com.securechat.app.di
 
+import android.content.Context
 import com.securechat.core.network.ChatApiService
 import com.securechat.core.network.RealtimeMessageClient
+import com.securechat.core.security.IdentityKeyStore
 import com.securechat.core.security.KeystoreManager
 import com.securechat.core.security.SessionCipherManager
 import com.securechat.core.security.X3DHKeyManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.gotrue.Auth
@@ -58,7 +61,11 @@ object NetworkModule {
         install(Realtime)     // Real-time channel subscriptions
         install(Storage)      // File storage (encrypted media uploads)
 
-        httpEngine = OkHttp   // Android-compatible Ktor engine
+        httpEngine = OkHttp.create()   // Android-compatible Ktor engine
+    }.also {
+        // ── DEBUG ─────────────────────────────────────────────────────────
+        android.util.Log.d("SCDebug", "provideSupabaseClient() CREATED NEW INSTANCE, identity hash = ${System.identityHashCode(it)}")
+        // ── END DEBUG ─────────────────────────────────────────────────────
     }
 
     // ── Service layer ─────────────────────────────────────────────────────────
@@ -88,4 +95,9 @@ object NetworkModule {
     @Singleton
     fun provideSessionCipherManager(x3dh: X3DHKeyManager): SessionCipherManager =
         SessionCipherManager(x3dh)
+
+    @Provides
+    @Singleton
+    fun provideIdentityKeyStore(@ApplicationContext context: Context): IdentityKeyStore =
+        IdentityKeyStore(context)
 }

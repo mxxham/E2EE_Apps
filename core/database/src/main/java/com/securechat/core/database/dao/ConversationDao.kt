@@ -13,6 +13,10 @@ interface ConversationDao {
     @Query("SELECT * FROM conversations ORDER BY last_message_timestamp DESC")
     fun observeAll(): Flow<List<ConversationEntity>>
 
+    /** One-shot snapshot of all conversations (non-reactive) — used for sync/cleanup logic. */
+    @Query("SELECT * FROM conversations")
+    suspend fun getAllOnce(): List<ConversationEntity>
+
     @Query("SELECT * FROM conversations WHERE id = :conversationId LIMIT 1")
     suspend fun getById(conversationId: String): ConversationEntity?
 

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
  * Delivery stages for a message, mirroring the 3-stage protocol:
  * PENDING → SENT (server ack) → DELIVERED (device ack) → READ (user ack)
  */
-enum class DeliveryStatus { PENDING, SENT, DELIVERED, READ }
+enum class DeliveryStatus { PENDING, SENT, DELIVERED, READ, FAILED }
 
 /** Message type discriminator for the UI renderer. */
 enum class MessageType { TEXT, IMAGE, VIDEO, AUDIO, FILE, DELETED }
